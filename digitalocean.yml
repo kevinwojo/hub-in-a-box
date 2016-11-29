@@ -9,23 +9,6 @@
    
    - include_vars: "deploysecrets.yml"
 
-   - name: ensure ssh key exists
-     local_action:
-      module: user
-      name: "{{ ansible_user_id }}"
-      generate_ssh_key: yes
-      ssh_key_file: "~/data/.ssh/id_rsa"
-
-   - name: Ensure key exists at DigitalOcean
-     local_action:
-      module: digital_ocean
-      state: present
-      command: ssh
-      name: 'my_ssh_key'
-      ssh_pub_key: "{{ lookup('file', '~/data/.ssh/id_rsa.pub') }}"
-      api_token: "{{ digitalocean_api_token }}"
-     register: my_ssh_key
-
    - name: Ensure droplet exists
      local_action:
       module: digital_ocean
@@ -36,7 +19,6 @@
       size_id: 1Gb
       region_id: "{{ region }}"
       image_id: "{{ image }}"
-      ssh_key_ids: "{{ my_ssh_key.ssh_key.id }}"
       api_token: "{{ digitalocean_api_token }}"
      register: droplet_details
  
