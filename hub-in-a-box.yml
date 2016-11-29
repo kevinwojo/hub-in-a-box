@@ -1,4 +1,4 @@
 ---
- - hosts: hub-standard
+ - hosts: hub-in-a-box
    roles:
    - hub-in-a-box

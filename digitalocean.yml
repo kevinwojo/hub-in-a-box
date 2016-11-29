@@ -4,8 +4,6 @@
    vars:
     region: 'nyc3'
     image: 'centos-6-x64'
-    #hub_hostname: 'demo.kwojo314.com'
-    #hub_hostname: 'demohub.kwojo314.com'
     
    tasks:
    
