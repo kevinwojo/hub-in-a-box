@@ -1,0 +1,170 @@
+---
+ - name: Backup /etc/sysconfig/selinux
+   command: "mv /etc/sysconfig/selinux /etc/sysconfig/selinux.bak"
+
+ - name: Disable SELinux for the time being
+   shell: sed -e 's/SELINUX=enforcing/SELINUX=disabled/' /etc/sysconfig/selinux.bak > /etc/sysconfig/selinux
+
+ - name: Add the Hubzero Repo
+   copy: src="{{ role_path }}/files/hubzero.repo" dest=/etc/yum.repos.d/hubzero.repo
+
+ - name: Enable EPEL Repository
+   yum: name=epel-release state=present
+
+ - name: Install wget Package
+   yum: name=wget state=present
+
+ - name: Add the OpenVPN Repo
+   copy: src="{{ role_path }}/files/openvz.repo" dest=/etc/yum.repos.d/openvz.repo
+   
+ - name: Install PHP54, et al.
+   yum: name=centos-release-scl-rh state=present
+
+ - name: Install hubzero-mysql
+   yum: name=hubzero-mysql state=present
+
+ - name: Install exim (mail)
+   yum: name=exim state=present
+
+ - name: Install hubzero-cms
+   yum: name=hubzero-cms-2.1.0 state=present
+
+ - name: Install rsync
+   yum: name=rsync state=present
+
+ - name: Install m4
+   yum: name=m4 state=present
+
+ - name: Instantiate hubzero-cms
+   command: hzcms install hub
+
+ - name: Pull in CMS PHP Dependancies
+   command: ./bin/composer install
+   args:
+    chdir: /var/www/hub/core
+
+ - name: Run CMS Database Migrations
+   command: php muse migration -i -f
+   args:
+    chdir: /var/www/hub
+
+
+ - name: Install OpenLDAP
+   yum: name=hubzero-openldap state=present
+
+ #@FIXME: don't ignore errors
+ - name: Intitalize Hubzero LDAP
+   command: hzldap init
+   ignore_errors: yes
+
+ - name: Configure Hubzero LDAP
+   command: hzcms configure ldap --enable
+
+ - name: Sync System Users to LDAP
+   command: hzldap syncusers
+
+ - name: Install WebDAV
+   yum: name=hubzero-webdav state=present
+
+ - name: Configure WebDAV
+   command: hzcms configure webdav --enable
+
+ - name: Install Subversion
+   yum: name=hubzero-subversion state=present
+
+ - name: Configure subversion
+   command: hzcms configure subversion --enable
+
+ - name: Install Trac
+   yum: name=hubzero-trac state=present
+
+ - name: Configure Trac
+   command: hzcms configure trac --enable
+
+ - name: Install Forge
+   yum: name=hubzero-forge state=present
+
+ - name: Configure Forge
+   command: hzcms configure forge --enable
+
+ - name: Install Hubzero OpenVZ Utilities
+   yum: name=hubzero-openvz state=present
+
+ - name: Restart Machine
+   shell: sleep 2 && shutdown -r now "Ansible update"
+   async: 1
+   poll: 0
+   sudo: true
+   ignore_errors: true
+
+ - name: Wait for Host to come back online
+   local_action: wait_for host= {{ inventory_hostname }} state=started delay=10 timeout=300
+   sudo: false
+
+ - name: Install Hubzero Firewall
+   yum: name=hubzero-firewall state=present
+
+ - name: Install Maxwell Service
+   yum: name=hubzero-mw-service state=present
+
+ - name: Configure Maxwell Service (templates)
+   command: mkvztemplate amd64 wheezy shira
+
+ - name: Configure Maxwell Service (service)
+   command: hzcms configure mw-service --enable
+
+ - name: Install Maxwell Client
+   yum: name=hubzero-mw-client state=present
+
+ - name: Configure Maxwell Client
+   command: hzcms configure mw-client --enable
+
+ - name: Install vncproxy
+   yum: name=hubzero-vncproxy state=present
+
+ - name: Configure vncproxy
+   command: hzcms configure vncproxy --enable
+
+ - name: Install telequotad
+   yum: name=hubzero-telequotad state=present
+
+ #TODO: implement quota
+ - name: Install Workspace
+   yum: name=hubzero-app state=present
+
+ - name: Install hubzero-workspace
+   yum: name=hubzero-app-workspace state=present
+
+ - name: Install workspace in containers
+   command: hubzero-app install --publish /usr/share/hubzero/apps/workspace-1.3.hza
+
+ - name: Install Rappture
+   yum: name=hubzero-rappture-deb7 state=present
+
+ #@TODO configure rappture within the chroot
+
+ - name: Install Filexfer
+   yum: name=hubzero-filexfer-xlate state=present
+
+ - name: Configure filexfer
+   command: hzcms configure filexfer --enable
+
+ - name: Update packages
+   yum: name=* state=latest
+
+ - name: Copy over certbot
+   copy: src="{{ role_path }}/files/certbot-auto" dest=/usr/sbin/certbot mode=0744
+
+ - name: Bootstrap certbot
+   command: certbot -n
+   register: command_result
+   failed_when: "'failed' in command_result.stderr"
+
+ - name: Stop Apache (httpd)
+   service: name=httpd state=stopped
+
+ - name: Obtain certificate
+   command: "certbot --installer apache -d {{ inventory_hostname }} --standalone --email=linuxfanatic91@gmail.com --agree-tos -n"
+
+ - name: Restart Apache (httpd)
+   service: name=httpd state=started
