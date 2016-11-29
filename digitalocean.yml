@@ -1,5 +1,5 @@
 ---
- - hosts: digitalocean
+ - hosts: localhost 
 
    vars:
     region: 'nyc3'
