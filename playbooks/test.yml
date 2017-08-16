@@ -1,0 +1,13 @@
+---
+- hosts: localhost 
+  gather_facts: False
+  tasks:
+   - name: Test
+     local_action: command date
+
+   - name: Testing the date thing 
+     shell: date +%s
+     register: date
+
+   - name: Debug
+     debug: var=date.stdout

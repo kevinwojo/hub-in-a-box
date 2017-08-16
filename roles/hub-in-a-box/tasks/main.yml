@@ -20,6 +20,9 @@
  - name: Install PHP54, et al.
    yum: name=centos-release-scl-rh state=present
 
+ - name: Install hubzero-cli
+   yum: name=hubzero-cli state=present
+
  - name: Install hubzero-mysql
    yum: name=hubzero-mysql state=present
 
@@ -48,9 +51,16 @@
    args:
     chdir: /var/www/hub
 
+ - name: Fix config directory permissions
+   command: chown apache:apache config -R
+   args:
+    chdir: /var/www/hub/app
 
  - name: Install OpenLDAP
    yum: name=hubzero-openldap state=present
+
+ #- name: HOTFIX Filemode on /etc/sssd/sssd.conf to 600
+   #command: chmod 600 /etc/sssd/sssd.conf
 
  #@FIXME: don't ignore errors
  - name: Intitalize Hubzero LDAP
@@ -135,8 +145,8 @@
  - name: Install hubzero-workspace
    yum: name=hubzero-app-workspace state=present
 
- - name: Install workspace in containers
-   command: hubzero-app install --publish /usr/share/hubzero/apps/workspace-1.3.hza
+ #- name: Install workspace in containers
+ #  command: hubzero-app install --publish /usr/share/hubzero/apps/workspace-1.3.hza
 
  - name: Install Rappture
    yum: name=hubzero-rappture-deb7 state=present
@@ -164,7 +174,7 @@
    service: name=httpd state=stopped
 
  - name: Obtain certificate
-   command: "certbot --installer apache -d {{ inventory_hostname }} --standalone --email=linuxfanatic91@gmail.com --agree-tos -n"
+   command: "certbot --installer apache -d {{ inventory_hostname }} --standalone --email={{admin_email}} --agree-tos -n"
 
  - name: Restart Apache (httpd)
    service: name=httpd state=started

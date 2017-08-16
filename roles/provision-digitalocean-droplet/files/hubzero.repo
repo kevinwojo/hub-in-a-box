@@ -1,0 +1,5 @@
+[hubzero]
+name=Hubzero RHEL$releasever - $basearch
+baseurl=http://packages.hubzero.org/rpm/rhel6/hz-2.0.0
+enabled=1
+gpgcheck=0

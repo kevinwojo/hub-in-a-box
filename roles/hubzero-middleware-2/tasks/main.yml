@@ -1,0 +1,89 @@
+---
+ - name: Remove hubzero-mw-service Package
+   yum:
+    name: hubzero-mw-service
+    state: absent
+
+ - name: Remove hubzero-mw-client Package
+   yum:
+    name: hubzero-mw-client
+    state: absent
+
+ - name: Install hubzero-mw2-common Package
+   yum:
+    name: https://packages.hubzero.org/unsigned/rpm/hubzero-mw2-common-2.1.4-1.noarch.rpm 
+    state: present 
+
+ - name: Install hubzero-mw2-exec-service Package
+   yum:
+    name: https://packages.hubzero.org/unsigned/rpm/hubzero-mw2-exec-service-2.1.0-2.noarch.rpm
+    state: present 
+
+ - name: Install hubzero-mw2-client Package
+   yum:
+    name: https://packages.hubzero.org/unsigned/rpm/hubzero-mw2-client-2.1.2-1.noarch.rpm
+    state: present 
+
+ - name: Install socat
+   yum:
+    name: socat
+    state: present 
+
+ - name: Install debootstrap
+   yum:
+    name: debootstrap 
+    state: present 
+
+ - name: Install stunnel
+   yum:
+    name: stunnel 
+    state: present 
+
+## Stuff HZCMS needs to do, but currently doesn't
+
+ - name: Check for mw-client.conf File
+   stat: path=/etc/mw-client/mw-client.conf.rpmorig
+   register: mw_conf_file
+
+ - name: Set timestamp
+   shell: date +%s
+   register: date_command
+   when: mw_conf_file.stat.exists == False
+
+ - name: Set timestamp
+   set_fact:
+    timestamp: "{{date_command.stdout}}"
+   when: mw_conf_file.stat.exists == False
+
+ - name: Backup mw-client Configuration File
+   command: "cp /etc/mw-client/mw-client.conf /etc/mw-client/mw-client.conf.bak-{{timestamp}}"
+   when: mw_conf_file.stat.exists == False
+
+ - name: Enable mw-client
+   command: "hzcms configure mw-client --enable"
+   when: mw_conf_file.stat.exists == False
+
+ - name: Append old config to new mw-client
+   shell: "cat /etc/mw-client/mw-client.conf.bak-{{timestamp}} >> /etc/mw-client/mw-client.conf"
+   when: mw_conf_file.stat.exists == False
+
+ - name: Install hubzero-mw2-exec-proxy
+   yum:
+    name: https://packages.hubzero.org/unsigned/rpm/hubzero-mw2-exec-proxy-2.1.1-1.noarch.rpm
+    state: present 
+
+ - name: Install hubzero-mw2-front-proxy Package
+   yum:
+    name: https://packages.hubzero.org/unsigned/rpm/hubzero-mw2-front-proxy-2.1.3-1.noarch.rpm
+    state: present 
+
+ - name: Install hubzero-mw2-dispatch Package
+   yum:
+    name: https://packages.hubzero.org/unsigned/rpm/hubzero-mw2-dispatch-2.1.0-1.noarch.rpm
+    state: present 
+
+ - name: Install maxwell public key into authorized_keys
+   shell: echo command=\"/usr/bin/dispatch\",from=\"127.0.0.1\" `cat /etc/mw-client/maxwell.key.pub` >> /root/.ssh/authorized_keys
+
+ - name: Populate Known Hosts
+   shell: ssh-keyscan localhost >> /etc/ssh/ssh_known_hosts

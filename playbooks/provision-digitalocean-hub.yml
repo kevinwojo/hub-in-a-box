@@ -1,0 +1,45 @@
+---
+- include: addhost.yml provision_hostname=ansibletest09.kwojo314.com
+
+- name: Create a hub-in-a-box instance
+  hosts: "{{hostvars['localhost']['provision_hostname']}}"
+  gather_facts: False
+
+  vars:
+   region: "nyc3"
+   image: "centos-6-x64"
+   vm_size: "2gb"
+   admin_email: "kevin@spicyomelet.com"
+
+#  vars_prompt:
+#    - name: "domainName"
+#      prompt: "The domain of the hub (ie hub.domain.com)"
+#      private: no
+
+#    - name: "region"
+#      prompt: "What region to deploy droplet to? (nyc3)"
+#      default: "nyc3"
+#      private: no
+
+#    - name: "image"
+#      prompt: "Linux Distro Image (centos-6-x64)"
+#      default: "centos-6-x64"
+#      private: no
+
+#    - name: "vm_size"
+#      prompt: "Size of Droplet (2gb)"
+#      default: "2gb"
+#      private: no
+
+#    - name: "admin_email"
+#      prompt: "Email used for important notices"
+#      private: no
+
+  tasks:
+    - name: Add instance to inventory
+      add_host: name="{{provision_hostname | default(hostvars['localhost']['provision_hostname']) }}"
+
+  roles:
+  - provision-digitalocean-droplet
+  - hub-in-a-box
+  - hubzero-middleware-2

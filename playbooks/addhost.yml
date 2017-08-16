@@ -1,0 +1,16 @@
+---
+
+- name: Add {{provision_hostname}} to inventory
+  hosts: localhost
+  gather_facts: False
+  become: False
+
+  tasks:
+    - name: Record hostname to provision
+      set_fact:
+         provision_hostname: "{{provision_hostname}}"
+
+    - name: Add {{provision_hostname}} to the ansible-playbook in-memory inventory
+      add_host: 
+        name: "{{provision_hostname}}"
+      when: hostvars[provision_hostname] is not defined

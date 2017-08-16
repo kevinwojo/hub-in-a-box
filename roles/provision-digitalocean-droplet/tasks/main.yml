@@ -1,0 +1,43 @@
+---
+   - include_vars: "../../deploysecrets.yml"
+
+   - name: Ensure key exists at DigitalOcean
+     local_action:
+      module: digital_ocean
+      state: present
+      command: ssh
+      name: 'ansible-workstation'
+      ssh_pub_key: "{{ deploy_public_key }}"
+      api_token: "{{ digitalocean_api_token }}"
+     register: my_ssh_key
+
+   - name: Ensure droplet exists
+     local_action:
+      module: digital_ocean
+      state: present
+      command: droplet
+      name: "{{provision_hostname | default(hostvars['localhost']['provision_hostname']) }}"
+      unique_name: yes
+      size_id: "{{ vm_size }}"
+      region_id: "{{ region }}"
+      image_id: "{{ image }}"
+      ssh_key_ids: "{{ my_ssh_key.ssh_key.id }}"
+      api_token: "{{ digitalocean_api_token }}"
+     register: droplet_details
+ 
+   - name: Create DNS entries
+     local_action:
+      module: digital_ocean_domain
+      state: present
+      name: "{{provision_hostname | default(hostvars['localhost']['provision_hostname']) }}"
+      ip: "{{ droplet_details.droplet.ip_address }}"
+      api_token: "{{ digitalocean_api_token }}"
+       
+   - name: See if the host is up and ready to go
+     ping:
+     register: ping
+     until: ping.ping == 'pong'
+     delay: 2
+     retries: 30
+     connection: local
+    
