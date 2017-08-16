@@ -1,1 +1,6 @@
-#deploysecrets.yml
+deploysecrets.yml
+ansible.cfg
+*.swp
+*.swn
+*.swo
+*.bak

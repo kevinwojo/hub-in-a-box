@@ -1,5 +1,0 @@
-[digitalocean]
-localhost ansible_connection=local
-
-[hub-standard]
-hubdemo.kwojo314.com
